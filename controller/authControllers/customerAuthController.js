@@ -92,14 +92,17 @@ const udpateCustomerDetail = async (req, res) => {
         if (!customer) return res.status(404).send({ errors: [{ msg: "Customer does not exists" }] })
 
         // password encryption
-        let salt = bcrypt.genSaltSync(10);
-        const securedPassword = bcrypt.hashSync(password, salt);
+        let securedPassword = ""
+        if (password) {
+            let salt = bcrypt.genSaltSync(10);
+            securedPassword = bcrypt.hashSync(password, salt);
+        }
 
         const updateCustomer = {
             name,
             email,
             phone,
-            password: securedPassword,
+            password: password ? securedPassword : customer.password,
             gender,
             preferedPaymentMethod,
             status,
@@ -110,7 +113,7 @@ const udpateCustomerDetail = async (req, res) => {
         customer = await Customer.findByIdAndUpdate(req.user.id, { $set: updateCustomer }, { new: true });
 
         // Sending jwt token
-        res.send(getAuthToken(customer._id))
+        res.send(getAuthToken(customer._id, customer.role))
 
     } catch (error) {
         console.log(error)

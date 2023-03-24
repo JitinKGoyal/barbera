@@ -16,9 +16,9 @@ router.post('/login', customerLoginRules, RuleVerifier, customerlogin)
 router.get('/userDetail', jwtAuthenticator, roleVerifier(roles.CUSTOMER), customerDetail)
 
 // For updating customer data || login required
-router.put('/', customerSignUpRules, RuleVerifier, jwtAuthenticator, roleVerifier(roles.CUSTOMER), udpateCustomerDetail)
+router.put('/', jwtAuthenticator, roleVerifier(roles.CUSTOMER), udpateCustomerDetail)
 
 // For deleting customer || login required
-router.delete('/', jwtAuthenticator, roleVerifier(roleVerifier.CUSTOMER), deleteCustomer)
+router.delete('/', jwtAuthenticator, roleVerifier(roles.CUSTOMER), deleteCustomer)
 
 module.exports = router;

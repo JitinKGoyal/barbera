@@ -11,6 +11,10 @@ const WorkerSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    password: {
+        type: String,
+        required: true,
+    },
     email: {
         type: String,
         required: true,
@@ -23,6 +27,10 @@ const WorkerSchema = new mongoose.Schema({
     status: {
         type: String,
         default: "ACTIVE"
+    },
+    role: {
+        type: String,
+        required: true
     },
     createdOn: {
         type: Date,

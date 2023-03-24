@@ -14,14 +14,22 @@ const ServiceProviderSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    password: {
+        type: String,
+        required: true
+    },
     email: {
         type: String,
         required: true,
         unique: true,
     },
+    role: {
+        type: String,
+        required: true
+    },
     availability: {
         type: Boolean,
-        required: true
+        default: true
     },
     status: {
         type: String,
