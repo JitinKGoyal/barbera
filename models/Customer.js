@@ -23,6 +23,10 @@ const CustomerSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    role: {
+        type: String,
+        required: true
+    },
     preferedPaymentMethod: {
         type: String,
         default: "COD"

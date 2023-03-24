@@ -2,11 +2,13 @@ const Customer = require("../../models/Customer")
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { jwtkey } = require("../../config");
+const { getAuthToken } = require("../../utils/getAuthToken");
+const { roles } = require("../../constants/constants");
 
 // Customer signup controller
 const customerSignUp = async (req, res) => {
     try {
-        const { email, phone, password } = req.body
+        const { name, email, phone, password, gender, preferedPaymentMethod, status } = req.body
 
         // check for duplicate email
         let customer = await Customer.findOne({ email })
@@ -20,19 +22,25 @@ const customerSignUp = async (req, res) => {
         let salt = bcrypt.genSaltSync(10);
         const securedPassword = bcrypt.hashSync(password, salt);
 
-        req.body.password = securedPassword
-        req.body.createdOn = Date.now()
-        req.body.updatedOn = Date.now()
-
-        // jwt token
-        const jwtToken = jwt.sign({ email, phone, password }, jwtkey)
-
-        Customer.create(req.body)
-            .then(customer => res.status(201).send({ jwtToken }))
+        // again creting object for no entry of extra data
+        Customer.create({
+            name,
+            email,
+            phone,
+            password: securedPassword,
+            gender,
+            preferedPaymentMethod,
+            status,
+            role: roles.CUSTOMER,
+            createdOn: Date.now(),
+            updatedOn: Date.now()
+        })
+            .then(customer => res.status(201).send(getAuthToken(customer._id, customer.role)))
             .catch(err => res.status(400).send(err))
 
     } catch (error) {
-        res.status(500).send(error)
+        console.log(error)
+        res.status(500).send({ error })
     }
 }
 
@@ -51,11 +59,11 @@ const customerlogin = async (req, res) => {
         if (!result) return res.status(404).send({ errors: [{ msg: "incorrect password" }] })
 
         // Sending jwt token
-        const jwtToken = jwt.sign({ id: customer._id, email, password }, jwtkey)
-        res.send({ jwtToken })
+        res.send(getAuthToken(customer._id, customer.role))
 
     } catch (error) {
-        res.status(500).send(error)
+        console.log(error)
+        res.status(500).send({ error })
     }
 }
 
@@ -63,14 +71,72 @@ const customerlogin = async (req, res) => {
 const customerDetail = async (req, res) => {
     try {
         // Sending customer data without password
-        const customer = await Customer.findById(req.body.id).select("-password")
+        const customer = await Customer.findById(req.user.id).select("-password")
         if (!customer) return res.status(404).send({ errors: [{ msg: "Customer does not exists" }] })
 
         return res.send(customer)
 
     } catch (error) {
-        res.status(500).send(error)
+        console.log(error)
+        res.status(500).send({ error })
     }
 }
 
-module.exports = { customerSignUp, customerlogin, customerDetail };
+// To update a customer
+const udpateCustomerDetail = async (req, res) => {
+    try {
+        const { name, email, phone, password, gender, preferedPaymentMethod, status } = req.body
+
+        // Checking customer existence
+        let customer = await Customer.findById(req.user.id)
+        if (!customer) return res.status(404).send({ errors: [{ msg: "Customer does not exists" }] })
+
+        // password encryption
+        let salt = bcrypt.genSaltSync(10);
+        const securedPassword = bcrypt.hashSync(password, salt);
+
+        const updateCustomer = {
+            name,
+            email,
+            phone,
+            password: securedPassword,
+            gender,
+            preferedPaymentMethod,
+            status,
+            updatedOn: Date.now()
+        }
+
+        // Updating customer in database
+        customer = await Customer.findByIdAndUpdate(req.user.id, { $set: updateCustomer }, { new: true });
+
+        // Sending jwt token
+        res.send(getAuthToken(customer._id))
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ error })
+    }
+}
+
+// To delete a customer
+const deleteCustomer = async (req, res) => {
+    try {
+        // Checking customer existance
+        let customer = await Customer.findById(req.user.id)
+        if (!customer) return res.status(404).send({ errors: [{ msg: "Customer does not exists" }] })
+
+        const result = await Customer.findByIdAndDelete(customer._id)
+
+        if (result._id) {
+            res.send(true)
+        } else {
+            res.send(false)
+        }
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ error })
+    }
+}
+
+module.exports = { customerSignUp, customerlogin, customerDetail, udpateCustomerDetail, deleteCustomer };
